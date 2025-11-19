@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nyaya Mitra</title>
+
+    <!-- 
+      FINAL FIX: We are using the Tailwind CDN to ensure styling works
+      regardless of local NPM build issues. This bypasses the need for 
+      the broken PostCSS step.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 
+      We comment out the problematic local CSS link.
+      <link rel="stylesheet" href="/src/index.css" /> 
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
