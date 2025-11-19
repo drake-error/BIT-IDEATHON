@@ -76,9 +76,9 @@ body {
 }
 
 /* Logo/Name Styling */
-.logo-container {
+.logo-container 
     /* flex-grow: 1; - You can uncomment this if you need the logo section to take up available space */
-}
+
 
 .site-name {
     font-size: 28px;

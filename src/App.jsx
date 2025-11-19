@@ -1,6 +1,5 @@
 import React from 'react';
-// We'll assume index.css handles the main styling, but let's add some
-// Tailwind-like classes for structure and aesthetics.
+// We are keeping this file clean for pure frontend focus.
 
 function App() {
   return (
@@ -8,36 +7,40 @@ function App() {
       
       {/* Header and Top Bar */}
       <header className="header bg-white shadow-lg sticky top-0 z-10">
-        <div className="top-bar flex items-center justify-between p-4 max-w-7xl mx-auto">
+        <div className="top-bar flex flex-col sm:flex-row items-center justify-between p-4 max-w-7xl mx-auto">
           
-          {/* Logo and Site Name */}
-          <div className="logo-container">
+          {/* Logo and Site Name + Tagline Container (Stacked on Mobile, Side-by-Side on Desktop) */}
+          <div className="logo-container flex flex-col items-center sm:items-start mb-4 sm:mb-0 min-w-[200px]">
             <h1 className="site-name text-3xl font-extrabold text-indigo-700 tracking-tight">
               Nyaya Mitra
             </h1>
+            {/* Tagline moved directly under the name for better grouping */}
+            <p className="tagline text-xs italic text-gray-500 mt-1">
+              "Support for Every Step Toward Justice."
+            </p>
           </div>
           
-          {/* Search Bar */}
-          <div className="search-container flex-grow max-w-md mx-4">
+          {/* Search Bar (Unified input and button) */}
+          <div className="search-container flex-grow max-w-xl mx-4 w-full sm:w-auto flex shadow-md rounded-xl">
             <input 
               type="text" 
               placeholder="Search the Constitution or IPC section..." 
-              className="w-full p-3 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 transition duration-150 ease-in-out shadow-inner"
+              // FIX: Added bg-white to ensure the input background is white
+              className="w-full p-3 border border-indigo-200 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out bg-white text-gray-800"
             />
+            <button
+              className="p-3 px-6 font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition duration-150 ease-in-out rounded-r-xl whitespace-nowrap"
+            >
+              Search
+            </button>
           </div>
           
-          {/* Navigation/User Placeholder (optional, for future expansion) */}
-          <div className="nav-placeholder">
-            <button className="text-indigo-600 hover:text-indigo-800 font-medium hidden sm:block">
+          {/* Navigation/User Placeholder - Now a prominent button */}
+          <div className="nav-placeholder mt-4 sm:mt-0">
+            <button className="px-5 py-2 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold rounded-lg transition duration-150 ease-in-out">
               Log In
             </button>
           </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto pb-4">
-          <p className="tagline text-center text-sm italic text-gray-500">
-            "Support for Every Step Toward Justice."
-          </p>
         </div>
       </header>
 
@@ -51,6 +54,7 @@ function App() {
             This platform is your starting point for simplified law explanations. Use the search bar above to look up specific legal sections or topics.
           </p>
           
+          {/* Feature blocks - Always visible now */}
           <div className="mt-8 grid md:grid-cols-3 gap-6">
             <div className="p-6 bg-indigo-50 rounded-xl shadow-md hover:shadow-lg transition">
               <h3 className="font-bold text-xl text-indigo-700 mb-2">Simplified Law</h3>
