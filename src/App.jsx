@@ -11,9 +11,18 @@ function App() {
           
           {/* Logo and Site Name + Tagline Container (Stacked on Mobile, Side-by-Side on Desktop) */}
           <div className="logo-container flex flex-col items-center sm:items-start mb-4 sm:mb-0 min-w-[200px]">
-            <h1 className="site-name text-3xl font-extrabold text-indigo-700 tracking-tight">
-              Nyaya Mitra
-            </h1>
+            {/* New container for the logo image and text, using flex for alignment */}
+            <div className="flex items-center space-x-2"> 
+              {/* Logo: Now pointing to the static file in the /public folder */}
+              <img 
+                src="/logo.png" 
+                alt="Nyaya Mitra Logo" 
+                className="w-10 h-10 rounded-full"
+              />
+              <h1 className="site-name text-3xl font-extrabold text-indigo-700 tracking-tight">
+                Nyaya Mitra
+              </h1>
+            </div>
             {/* Tagline moved directly under the name for better grouping */}
             <p className="tagline text-xs italic text-gray-500 mt-1">
               "Support for Every Step Toward Justice."
@@ -25,7 +34,6 @@ function App() {
             <input 
               type="text" 
               placeholder="Search the Constitution or IPC section..." 
-              // FIX: Added bg-white to ensure the input background is white
               className="w-full p-3 border border-indigo-200 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out bg-white text-gray-800"
             />
             <button
@@ -80,4 +88,5 @@ function App() {
   );
 }
 
+// FIX: Added the missing default export to resolve the SyntaxError
 export default App;
