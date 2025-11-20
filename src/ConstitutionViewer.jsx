@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 
 // --- START: PASTED CONSTITUTION CONTENT (Article Titles & Hierarchy) ---
 // This object holds the structure (Parts, Chapters) and the verbatim text 
@@ -402,23 +402,57 @@ const getAllArticles = (data) => {
   return articles;
 };
 
+// Define minimum and maximum width for the sidebar
+const MIN_WIDTH = 250; // Minimum width in pixels
+const MAX_WIDTH = 600; // Maximum width in pixels
+
 // Main Constitution Viewer Component
 const ConstitutionViewer = () => {
   const allArticles = useMemo(() => getAllArticles(constitutionData), []);
   const [activeArticle, setActiveArticle] = useState(allArticles[0]?.id || 'Preamble');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // NEW STATE FOR MOBILE TOGGLE
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(300); // Initial desktop width
+  const isResizing = useRef(false);
+
+  // --- Resizing Logic ---
+  const startResizing = useCallback((e) => {
+    // Check for primary mouse button (0)
+    if (e.button !== 0) return; 
+    e.preventDefault();
+    isResizing.current = true;
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResizing);
+  }, []);
+
+  const resize = useCallback((e) => {
+    if (!isResizing.current) return;
+    const newWidth = e.clientX;
+    if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+      setSidebarWidth(newWidth);
+    } else if (newWidth < MIN_WIDTH) {
+      setSidebarWidth(MIN_WIDTH);
+    } else if (newWidth > MAX_WIDTH) {
+      setSidebarWidth(MAX_WIDTH);
+    }
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResizing);
+  }, []);
+  // --- End Resizing Logic ---
+
+
   // Custom Hook to manage scrolling
   React.useEffect(() => {
-    // Only scroll if there's no active search term to prevent jumping during typing
     if (activeArticle && !searchTerm) {
       const element = document.getElementById(activeArticle);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else if (activeArticle && searchTerm) {
-       // If searching, just link directly to the first result without smooth scroll distraction
         const element = document.getElementById(activeArticle);
         if (element) {
             element.scrollIntoView({ behavior: 'auto', block: 'start' });
@@ -431,15 +465,13 @@ const ConstitutionViewer = () => {
     const lowerCaseSearch = searchTerm.toLowerCase().trim();
     if (!lowerCaseSearch) return allArticles;
     
-    // Filter logic
     let results = allArticles.filter(article => 
       article.searchableText.includes(lowerCaseSearch)
     );
     
-    // Set the first visible article as active
     if (results.length > 0 && activeArticle !== results[0].id) {
         setActiveArticle(results[0].id);
-    } else if (results.length === 0) {
+    } else if (results.length === 0 && activeArticle !== null) {
         setActiveArticle(null);
     }
     
@@ -458,11 +490,13 @@ const ConstitutionViewer = () => {
   };
 
   const Sidebar = () => (
-    // UPDATED SIDEBAR CLASSES FOR RESPONSIVE BEHAVIOR
+    // UPDATED SIDEBAR STYLES
     <div 
-        className={`fixed top-0 left-0 h-full w-72 p-6 bg-white border-r border-gray-300 z-50 transform transition-transform duration-300 ease-in-out 
-                   lg:sticky lg:top-[150px] lg:h-[calc(100vh-150px)] lg:shadow-lg lg:rounded-xl lg:flex-shrink-0 lg:w-72 lg:z-40 
-                   ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'} overflow-y-auto`}
+        // Inline style sets the adjustable width on large screens
+        style={window.innerWidth >= 1024 ? { width: `${sidebarWidth}px` } : {}}
+        className={`fixed top-0 left-0 h-full p-6 bg-white border-r border-gray-300 z-50 transform transition-transform duration-300 ease-in-out 
+                   lg:sticky lg:top-[150px] lg:h-[calc(100vh-150px)] lg:shadow-lg lg:rounded-xl lg:flex-shrink-0 lg:z-40 
+                   ${isSidebarOpen ? 'translate-x-0 shadow-2xl w-full sm:w-96' : '-translate-x-full lg:translate-x-0'} overflow-y-auto`}
     >
       <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
         🏛️ Constitution Navigator
@@ -526,7 +560,7 @@ const ConstitutionViewer = () => {
         The Constitution of India
       </h2>
       
-      {/* Mobile Toggle Button (NEW ADDITION) */}
+      {/* Mobile Toggle Button */}
       <button 
           onClick={() => setIsSidebarOpen(true)} 
           className="lg:hidden fixed bottom-4 right-4 bg-indigo-600 text-white p-3 rounded-full shadow-lg z-50 hover:bg-indigo-700 transition"
@@ -534,7 +568,8 @@ const ConstitutionViewer = () => {
           Open Menu ☰
       </button>
 
-      <div className="p-4 bg-gray-100 rounded-lg border-l-4 border-indigo-500 shadow-inner sticky top-[150px] z-30 mb-8">
+      {/* SEARCH BAR - CHANGED TO WHITE BACKGROUND */}
+      <div className="p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-inner sticky top-[150px] z-30 mb-8 border-t border-b"> 
         <label htmlFor="article-search" className="block text-sm font-medium text-gray-700 mb-2">
           🔍 Search Constitutional Text
         </label>
@@ -544,7 +579,12 @@ const ConstitutionViewer = () => {
           placeholder="Search for words, phrases, or article numbers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 bg-white"
+          style={{ 
+             // Optional: Darker input background inside white bar for contrast
+             backgroundColor: 'white',
+             color: 'black'
+          }}
         />
       </div>
 
@@ -581,14 +621,21 @@ const ConstitutionViewer = () => {
     </div>
   );
 
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 lg:py-12 flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 lg:py-12 flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-0">
       {/* New: Overlay for mobile when sidebar is open */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* Sidebar: Now uses fixed/transform for mobile and sticky for desktop */}
+      {/* Sidebar Container */}
       <Sidebar />
+      
+      {/* Resizer Handle (Only visible on large screens) */}
+      <div 
+          className="hidden lg:block cursor-ew-resize w-2 bg-indigo-100 hover:bg-indigo-300 transition duration-150 h-[calc(100vh-150px)] sticky top-[150px] z-40"
+          onMouseDown={startResizing}
+          onDoubleClick={() => setSidebarWidth(300)} // Reset size on double click
+          title="Drag to resize menu. Double-click to reset."
+      />
       
       {/* Main Content */}
       <MainContent />
