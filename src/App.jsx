@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import LegalChatbot from './LegalChatbot.jsx';
+// ... rest of imports
 import ConstitutionViewer from './ConstitutionViewer.jsx'; 
 
 // Placeholder data for the navigation links
@@ -540,6 +542,9 @@ function App() {
       <main className="flex-grow w-full">
         {renderMainContent()}
       </main>
+{/* 🎯 CHATBOT PLACEMENT: Right before the footer and the closing div. */}
+      <LegalChatbot />
+
       
       {/* Footer */}
       <footer className="w-full p-4 bg-gray-200 text-center text-sm text-gray-600">
