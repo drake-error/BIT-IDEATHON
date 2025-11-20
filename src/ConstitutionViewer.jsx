@@ -401,33 +401,66 @@ const getAllArticles = (data) => {
   return articles;
 };
 
+// Define minimum and maximum width for the sidebar
+const MIN_WIDTH = 250; // Minimum width in pixels
+const MAX_WIDTH = 600; // Maximum width in pixels
+
 // Main Constitution Viewer Component
 const ConstitutionViewer = () => {
   const allArticles = useMemo(() => getAllArticles(constitutionData), []);
   const [activeArticle, setActiveArticle] = useState(allArticles[0]?.id || 'Preamble');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // NEW STATE FOR MOBILE TOGGLE
+  const [sidebarWidth, setSidebarWidth] = useState(300); // Initial desktop width (for resizer)
+  const isResizing = useRef(false);
   
-  // 1. STABLE SEARCH HANDLER (Fixes the typing/focus issue)
+  // 1. STABLE SEARCH HANDLER
   const handleSearchChange = useCallback((e) => { // <-- useCallback ensures stability
-      setSearchTerm(e.target.value);
+      setSearchTerm(e.target.value);
   }, []);
+  
+  // --- Resizing Logic ---
+  const startResizing = useCallback((e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    isResizing.current = true;
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResizing);
+    // Add a temporary class to the body to disable text selection during drag
+    document.body.style.userSelect = 'none';
+  }, []);
+
+  const resize = useCallback((e) => {
+    if (!isResizing.current) return;
+    const newWidth = e.clientX;
+    if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+      setSidebarWidth(newWidth);
+    } else if (newWidth < MIN_WIDTH) {
+      setSidebarWidth(MIN_WIDTH);
+    } else if (newWidth > MAX_WIDTH) {
+      setSidebarWidth(MAX_WIDTH);
+    }
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false;
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResizing);
+    // Remove the body class
+    document.body.style.userSelect = 'auto';
+  }, []);
+  // --- End Resizing Logic ---
 
 
   // Custom Hook to manage scrolling
   React.useEffect(() => {
-    // Only scroll if there's no active search term to prevent jumping during typing
-    if (activeArticle && !searchTerm) {
+    // Logic remains the same for scrolling to active element
+    if (activeArticle) {
       const element = document.getElementById(activeArticle);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Use 'auto' behavior for instant jump when searching, 'smooth' when clicking sidebar links (without search)
+        element.scrollIntoView({ behavior: searchTerm ? 'auto' : 'smooth', block: 'start' });
       }
-    } else if (activeArticle && searchTerm) {
-       // If searching, just link directly to the first result without smooth scroll distraction
-        const element = document.getElementById(activeArticle);
-        if (element) {
-            element.scrollIntoView({ behavior: 'auto', block: 'start' });
-        }
     }
   }, [activeArticle, searchTerm]);
 
@@ -449,7 +482,7 @@ const ConstitutionViewer = () => {
     }
     
     return results;
-  }, [searchTerm, allArticles]);
+  }, [searchTerm, allArticles, activeArticle]); // Added activeArticle to dependency array for correct logic flow
 
   const highlightText = (text) => {
     if (!searchTerm) return text;
@@ -463,10 +496,12 @@ const ConstitutionViewer = () => {
   };
 
   const Sidebar = () => (
-    // Sidebar is now fixed width and sticky on desktop, preventing overlap when in the main flex container
+    // The sidebar itself should remain fixed-width/sticky relative to its parent container (which is controlled by the outer div in the return)
     <div 
-        className={`fixed top-0 left-0 h-full w-72 p-6 bg-white border-r border-gray-300 z-50 transform transition-transform duration-300 ease-in-out 
-                   lg:sticky lg:top-[100px] lg:h-[calc(100vh-100px)] lg:shadow-lg lg:rounded-xl lg:flex-shrink-0 lg:w-72 lg:block
+        // Use inline style for resizing on large screens
+        style={window.innerWidth >= 1024 ? { width: `${sidebarWidth}px` } : {}}
+        className={`fixed top-0 left-0 h-full p-6 bg-white border-r border-gray-300 z-50 transform transition-transform duration-300 ease-in-out 
+                   lg:sticky lg:top-[250px] lg:h-[calc(100vh-250px)] lg:shadow-lg lg:rounded-xl lg:flex-shrink-0 lg:z-40 lg:block
                    ${isSidebarOpen ? 'translate-x-0 shadow-2xl w-full sm:w-96' : '-translate-x-full lg:translate-x-0'} overflow-y-auto`}
     >
       <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2 flex items-center justify-between">
@@ -526,43 +561,42 @@ const ConstitutionViewer = () => {
   );
 
   const MainContent = () => (
-    // Outer container for the main content area
+    // Outer container for the main content area
     <div className="flex-grow bg-white rounded-xl shadow-2xl">
-      
-      {/* STICKY HEADER/SEARCH WRAPPER */}
-      <div className="p-6 pb-0 rounded-t-xl sticky top-[150px] z-30 bg-white shadow-md">
-        
-        {/* Title */}
-        <h2 className="text-3xl font-extrabold text-indigo-800 border-b-2 border-indigo-200 pb-3 mb-6">
-          The Constitution of India
-        </h2>
-        
-        {/* Mobile Toggle Button */}
-        <button 
-          onClick={() => setIsSidebarOpen(true)} 
-          className="lg:hidden fixed bottom-4 right-4 bg-indigo-600 text-white p-3 rounded-full shadow-lg z-50 hover:bg-indigo-700 transition"
-        >
-            Open Menu ☰
-        </button>
+      
+      {/* STICKY HEADER/SEARCH WRAPPER */}
+      <div className="p-6 pb-0 rounded-t-xl sticky top-0 z-30 bg-white shadow-md">
+        
+        {/* Title */}
+        <h2 className="text-3xl font-extrabold text-indigo-800 border-b-2 border-indigo-200 pb-3 mb-6">
+          The Constitution of India
+        </h2>
+        
+        {/* Mobile Toggle Button (Fixed to screen) */}
+        <button 
+          onClick={() => setIsSidebarOpen(true)} 
+          className="lg:hidden fixed bottom-4 right-4 bg-indigo-600 text-white p-3 rounded-full shadow-lg z-50 hover:bg-indigo-700 transition"
+        >
+            Open Menu ☰
+        </button>
 
-        {/* SEARCH BAR CONTAINER */}
-        <div className="p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-inner mb-6 border-t border-b">
-          <label htmlFor="article-search" className="block text-sm font-medium text-gray-700 mb-2">
-            🔍 Search Constitutional Text
-          </label>
-          <input
-            id="article-search"
-            type="text"
-            placeholder="Search for words, phrases, or article numbers..."
-            value={searchTerm}
-            onChange={handleSearchChange} 
-            // FIX: Uses stable handler and ensures white background/text color
-            className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-gray-900"
-          />
-        </div>
-      </div>
+        {/* SEARCH BAR CONTAINER */}
+        <div className="p-4 bg-white rounded-lg border-l-4 border-indigo-500 shadow-inner mb-6 border-t border-b">
+          <label htmlFor="article-search" className="block text-sm font-medium text-gray-700 mb-2">
+            🔍 Search Constitutional Text
+          </label>
+          <input
+            id="article-search"
+            type="text"
+            placeholder="Search for words, phrases, or article numbers..."
+            value={searchTerm}
+            onChange={handleSearchChange} 
+            className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 text-gray-900"
+          />
+        </div>
+      </div>
 
-      {/* SCROLLABLE ARTICLE LIST AREA (The body of the rules) */}
+      {/* SCROLLABLE ARTICLE LIST AREA (The body of the rules) */}
       <div className="p-6 pt-0 space-y-10">
         {filteredArticles.length === 0 && searchTerm.length > 0 ? (
           <div className="p-8 text-center text-xl text-red-500 bg-red-50 border border-red-200 rounded-xl">
@@ -604,10 +638,34 @@ const ConstitutionViewer = () => {
       {/* New: Overlay for mobile when sidebar is open */}
       {isSidebarOpen && <div className="fixed inset-0 bg-black opacity-50 z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
 
-      {/* SIDEBAR COLUMN - Fixed Width on Desktop */}
-      <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
-          <Sidebar />
-      </div>
+      {/* SIDEBAR COLUMN - Handles Width and Resizing
+          1. The width is now controlled by inline style using sidebarWidth.
+          2. The parent div's height is determined by the content flow.
+       */}
+      <div 
+          className="hidden lg:block relative" 
+          style={{ width: `${sidebarWidth}px`, flexShrink: 0 }}
+      >
+          {/* INNER STICKY WRAPPER:
+              This correctly sets the context for the Sidebar component inside.
+              It sticks 12 units (3rem or ~48px) from the top to clear any expected nav/header space above the content.
+          */}
+          <div className="lg:sticky lg:top-12 lg:h-[calc(100vh-6rem)]"> 
+            <Sidebar />
+          </div>
+          
+          {/* Resizer Handle (Must cover the full height of the parent div) */}
+          <div 
+              className="absolute top-0 right-[-8px] cursor-ew-resize w-4 bg-transparent hover:bg-indigo-300 transition duration-150 z-40"
+              onMouseDown={startResizing}
+              onDoubleClick={() => setSidebarWidth(300)} // Reset size on double click
+              title="Drag to resize menu. Double-click to reset."
+              style={{
+                  height: '100%',
+              }}
+          />
+      </div>
+
 
       {/* Main Content COLUMN */}
       <MainContent />

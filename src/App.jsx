@@ -271,6 +271,7 @@ const HomeAdditionalContent = () => {
 // --- End Component: HomeAdditionalContent ---
 
 function App() {
+    
   const [activeLink, setActiveLink] = useState('Home'); // State to manage the active link for routing
 
   // Function to handle navigation clicks
